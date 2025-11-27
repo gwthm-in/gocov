@@ -47,19 +47,28 @@ jobs:
         id: version
         run: |
           # Get the latest dev tag
-          latest_dev=$(git tag -l 'dev-*' | sort -V | tail -1 || echo "dev-0.0.0")
-          echo "Latest dev version: $latest_dev"
-
+          latest_dev=$(git tag -l 'dev-*' | sort -V | tail -1 || echo "")
+          echo "Latest dev version: ${latest_dev:-none}"
+          
           # Extract version number and increment
-          if [[ "$latest_dev" == "dev-0.0.0" ]]; then
+          if [[ -z "$latest_dev" ]]; then
+            # No dev tags exist, start with dev-0.0.1
             new_version="dev-0.0.1"
           else
-            version_num=$(echo "$latest_dev" | sed 's/dev-//')
+            # Extract version number (remove 'dev-' prefix)
+            version_num=$(echo "$latest_dev" | sed 's/^dev-//')
+            
+            # Split version into major.minor.patch
             IFS='.' read -ra ADDR <<< "$version_num"
-            patch=$((ADDR[2] + 1))
-            new_version="dev-${ADDR[0]}.${ADDR[1]}.$patch"
+            major=${ADDR[0]:-0}
+            minor=${ADDR[1]:-0}
+            patch=${ADDR[2]:-0}
+            
+            # Increment patch version
+            patch=$((patch + 1))
+            new_version="dev-${major}.${minor}.${patch}"
           fi
-
+          
           echo "New dev version: $new_version"
           echo "version=$new_version" >> $GITHUB_OUTPUT
 
