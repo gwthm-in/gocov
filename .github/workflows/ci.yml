@@ -166,10 +166,29 @@ jobs:
       - name: Prepare release files
         run: |
           # Flatten artifact structure - artifacts are in subdirectories
+          # Each artifact is in a directory named after the platform (e.g., gocov-linux-amd64/gocov)
           mkdir -p release-assets
-          find artifacts -type f -name 'gocov*' -not -name '*.txt' -exec cp {} release-assets/ \;
-          cp artifacts/checksums.txt release-assets/ 2>/dev/null || true
-          ls -la release-assets/
+          
+          # Copy each binary with its platform-specific name
+          for dir in artifacts/gocov-*; do
+            if [ -d "$dir" ]; then
+              platform=$(basename "$dir")
+              # Find the binary file (gocov or gocov.exe)
+              binary=$(find "$dir" -type f -name 'gocov*' | head -1)
+              if [ -n "$binary" ]; then
+                # Copy with platform name preserved
+                cp "$binary" "release-assets/$platform"
+              fi
+            fi
+          done
+          
+          # Copy checksums if it exists
+          if [ -f artifacts/checksums.txt ]; then
+            cp artifacts/checksums.txt release-assets/
+          fi
+          
+          echo "Release assets:"
+          ls -lh release-assets/
 
       - name: Create dev release
         uses: softprops/action-gh-release@v1
@@ -178,7 +197,7 @@ jobs:
           name: Dev Release ${{ needs.dev-release-prepare.outputs.version }}
           body: |
             Development release automatically created from main branch.
-            
+
             **Commit:** ${{ github.sha }}
             **Commit Message:** ${{ github.event.head_commit.message }}
           files: |
