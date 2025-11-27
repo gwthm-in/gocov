@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.25.0', '1.26.0']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Build
+        run: go build ./...
+
+  dev-release-prepare:
+    name: Prepare dev release
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest dev version
+        id: version
+        run: |
+          # Get the latest dev tag
+          latest_dev=$(git tag -l 'dev-*' | sort -V | tail -1 || echo "dev-0.0.0")
+          echo "Latest dev version: $latest_dev"
+
+          # Extract version number and increment
+          if [[ "$latest_dev" == "dev-0.0.0" ]]; then
+            new_version="dev-0.0.1"
+          else
+            version_num=$(echo "$latest_dev" | sed 's/dev-//')
+            IFS='.' read -ra ADDR <<< "$version_num"
+            patch=$((ADDR[2] + 1))
+            new_version="dev-${ADDR[0]}.${ADDR[1]}.$patch"
+          fi
+
+          echo "New dev version: $new_version"
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Create dev tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.version }}" -m "Dev release ${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
+
+  dev-release-build:
+    name: Build dev binaries
+    needs: dev-release-prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            ext: ""
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            ext: ""
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            ext: ""
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            ext: ""
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            ext: ".exe"
+          - os: windows-latest
+            goos: windows
+            goarch: arm64
+            ext: ".exe"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go build -ldflags="-s -w" -o gocov${{ matrix.ext }} ./gocov
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gocov-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          path: gocov${{ matrix.ext }}
+
+  dev-release:
+    name: Create dev release
+    needs: [dev-release-prepare, dev-release-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create checksums
+        run: |
+          cd artifacts
+          find . -type f -name 'gocov*' -exec sha256sum {} \; > checksums.txt
+
+      - name: Create dev release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.dev-release-prepare.outputs.version }}
+          name: Dev Release ${{ needs.dev-release-prepare.outputs.version }}
+          body: |
+            Development release automatically created from main branch.
+
+            **Commit:** ${{ github.sha }}
+            **Commit Message:** ${{ github.event.head_commit.message }}
+          files: |
+            artifacts/**/gocov*
+            artifacts/checksums.txt
+          prerelease: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
