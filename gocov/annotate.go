@@ -24,14 +24,14 @@ import (
 	"flag"
 	"fmt"
 	"go/token"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/axw/gocov"
+	"github.com/gwthm-in/gocov"
 )
 
 const (
@@ -107,9 +107,9 @@ func annotateSource() (rc int) {
 	var data []byte
 	var err error
 	if filename := annotateFlags.Arg(0); filename == "-" {
-		data, err = ioutil.ReadAll(os.Stdin)
+		data, err = io.ReadAll(os.Stdin)
 	} else {
-		data, err = ioutil.ReadFile(filename)
+		data, err = os.ReadFile(filename)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read coverage file: %s\n", err)
@@ -179,7 +179,7 @@ func (a *annotator) printFunctionSource(fn *gocov.Function) error {
 		setContent = true
 	}
 
-	data, err := ioutil.ReadFile(fn.File)
+	data, err := os.ReadFile(fn.File)
 	if err != nil {
 		return err
 	}

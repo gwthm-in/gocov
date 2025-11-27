@@ -24,7 +24,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -32,7 +31,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/axw/gocov"
+	"github.com/gwthm-in/gocov"
 )
 
 type report struct {
@@ -204,7 +203,7 @@ func reportCoverage() (rc int) {
 	}
 	report := newReport()
 	for _, file := range files {
-		data, err := ioutil.ReadAll(file)
+		data, err := io.ReadAll(file)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to read coverage file: %s\n", err)
 			return 1

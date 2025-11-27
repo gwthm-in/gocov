@@ -23,15 +23,14 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/axw/gocov/gocov/convert"
-	"github.com/axw/gocov/gocov/internal/testflag"
+	"github.com/gwthm-in/gocov/gocov/convert"
+	"github.com/gwthm-in/gocov/gocov/internal/testflag"
 )
 
 // resolvePackages returns a slice of resolved package names, given a slice of
@@ -64,7 +63,7 @@ func runTests(args []string) error {
 		return err
 	}
 
-	tmpDir, err := ioutil.TempDir("", "gocov")
+	tmpDir, err := os.MkdirTemp("", "gocov")
 	if err != nil {
 		return err
 	}

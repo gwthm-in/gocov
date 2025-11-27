@@ -2,10 +2,11 @@ package gocovutil
 
 import (
 	"encoding/json"
-	"github.com/axw/gocov"
-	"io/ioutil"
+	"io"
 	"os"
 	"sort"
+
+	"github.com/gwthm-in/gocov"
 )
 
 // Packages represents a set of gocov.Package structures.
@@ -59,13 +60,13 @@ func ReadPackages(filenames []string) (ps Packages, err error) {
 				return nil, err
 			}
 			defer file.Close()
-			files = append(files, os.Stdin)
+			files = append(files, file)
 		}
 	}
 
 	// Parse the files, accumulate Packages.
 	for _, file := range files {
-		data, err := ioutil.ReadAll(file)
+		data, err := io.ReadAll(file)
 		if err != nil {
 			return nil, err
 		}
