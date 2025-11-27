@@ -2,15 +2,14 @@
 
 Coverage reporting tool for The Go Programming Language
 
-[![Build Status](https://travis-ci.org/axw/gocov.svg?branch=master)](https://travis-ci.org/axw/gocov)
-
 ## Installation
 
 ```go install github.com/axw/gocov/gocov@latest```
 
 ## Usage
 
-There are currently four gocov commands: ```test```, ```convert```, ```report``` and ```annotate```.
+There are currently four gocov commands: ```test```, ```convert```,
+```report``` and ```annotate```.
 
 #### gocov test
 
@@ -54,4 +53,12 @@ A simple GUI wrapper for the gocov coverage analysis tool.
 A simple helper tool for generating HTML output from gocov.
 
 [gocov-xml](https://github.com/AlekSi/gocov-xml):
-A simple helper tool for generating XML output in Cobertura format for CIs like Jenkins and others from gocov. 
+A simple helper tool for generating XML output in Cobertura format for CIs like
+Jenkins and others from gocov.
+
+## Credits
+
+This is originally built at https://github.com/axw/gocov and after it is
+archived and no longer support, community lacks coverage tool that produces
+reports. Thus, maintaining the public repo to support latest golang versions.
+
