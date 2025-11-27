@@ -24,17 +24,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/axw/gocov"
-	"github.com/axw/gocov/gocovutil"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"golang.org/x/tools/cover"
-	goPackages "golang.org/x/tools/go/packages"
 	"io"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/tools/cover"
+	goPackages "golang.org/x/tools/go/packages"
+
+	"github.com/gwthm-in/gocov"
+	"github.com/gwthm-in/gocov/gocovutil"
 )
 
 func marshalJson(w io.Writer, packages []*gocov.Package) error {
